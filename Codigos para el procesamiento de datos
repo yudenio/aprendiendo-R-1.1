@@ -1,0 +1,475 @@
+# Antes de ejecutar estos códigos, cree su carpeta de trabajo y 
+# su proyecto RStudio dentro de ella
+
+# Lectura de datos - Archivos txt
+
+datos01 = read.table("Datos 03.01 - A.txt", header=TRUE)
+datos01
+View(datos01)
+head(datos01) 
+datos01 = read.delim("Datos 03.01 - A.txt", header=TRUE)
+
+datos02 = read.table("Datos 03.01 - B.txt", header = TRUE) # ERROR
+
+datos02 = read.table("Datos 03.01 - B.txt", header = TRUE, skip = 2)
+head(datos02)
+
+datos03 = read.table("Datos 03.01 - C.txt", 
+                     header    = FALSE, 
+                     col.names = c("Pruebas","Resultado positivo"),
+                     na.strings = "*")
+
+datos04 = read.table("Datos 03.01 - D.txt", 
+                    header     = TRUE,
+                    nrows      = 10, 
+                    na.strings = "-")
+datos04[6,] # 6ta fila
+datos04[,2] # 2da columna
+datos04[6,2] # dato de la 6ta fila y 2da columna
+datos04$Muestra # columna Muestra
+
+datos05 = read.table("Datos 03.01 - E.txt", header = TRUE)
+head(datos05)
+
+datos05 = read.table("Datos 03.01 - E.txt", header = TRUE, row.names = 1)
+head(datos05)
+
+datos06 = read.table("Datos 03.01 - F.txt", header = TRUE, sep = "\t")
+datos06 = read.delim("Datos 03.01 - F.txt", header = TRUE)
+
+# Lectura de datos - Archivos csv
+
+datos07 = read.table("Datos 03.01 - G.csv", header = TRUE, sep = ",")
+head(datos07)
+datos07 = read.csv("Datos 03.01 - G.csv")
+head(datos07)
+
+datos08 = read.table("Datos 03.01 - H.csv", header = TRUE, sep = ";")
+datos08 = read.csv("Datos 03.01 - H.csv", sep = ";")
+datos08 = read.csv2("Datos 03.01 - H.csv")
+
+# Lectura de datos - Archivos xlsx
+
+# Necesitamos instalar y cargar el paquete readxl
+
+install.packages("readxl")
+library(readxl) 
+
+datos09 = read_xlsx("Datos 03.01 - I.xlsx")
+datos09 = read_xls("Datos 03.01 - I.xlsx")
+datos09 = read_excel("Datos 03.01 - I.xlsx")
+
+datos10 = read_excel("Datos 03.01 - J.xlsx", 
+                     sheet = "POSITIVIDAD_10082020",
+                     range = "A1:D5")
+head(datos10)
+View(datos10)
+
+datos11 = read_excel("Datos 03.01 - K.xls", 
+                     sheet = "CASOS_10082020",
+                     n_max = 2)
+head(datos11)
+
+datos12 = read_excel("Datos 03.01 - L.xlsx", 
+                     sheet = "CASOS_10082020",
+                     skip  = 4,
+                     col_names = c("País", "Región", "Moleculares", "Rápidas", "Positivos", "Fallecidos"))
+
+View(datos12)
+
+# CAPÍTULO 4: PREPARACIÓN DE DATOS
+
+library(dplyr)
+library(magrittr)
+
+x = c(2,5,4,3)
+sum(x)
+x %>% sum()
+
+y = "Jueves 3"
+is.logical(y)
+y %>% is.logical()
+y %>% is.logical() %>% as.numeric()
+as.numeric(is.logical(y))
+
+# ----------------- #
+# Limpieza de datos #
+# ----------------- #
+
+x = c(5,2.1,9,NA,4)
+is.na(x)
+sum(is.na(x))
+y <- sum(is.na(x))
+
+x %>% is.na()
+x %>% is.na() %>% sum()
+x %>% is.na() %>% sum() -> z
+
+# Aplicación 1: Biblioteca
+
+library(readxl)
+datos41A = read_excel("Datos 04.01 - A.xlsx")
+
+is.na(datos41A)
+datos41A %>% is.na()
+
+sum(is.na(datos41A))
+datos41A %>% is.na() %>% sum()
+
+datos41A %>% View()
+
+datos41A[,3] %>% is.na() %>% sum()
+datos41A$Editorial %>% is.na() %>% sum()
+m = datos41A[,3];m %>% is.na() %>% sum()
+m = datos41A[,3];sum(is.na(m))
+
+# Aplicación 2: Alumnos de posgrado
+
+datos41B = read.csv2("Datos 04.01 - B.csv")
+datos41B %>% View()
+datos41B %>% select(Nombre,Nota,Edad,NumCred) # Columnas a mantener
+datos41B %>% select(-X) # Columnas a eliminar
+(datos41B = datos41B %>% select(-X))
+
+datos41B %>% filter(Nota>=0 & Nota<=20)
+
+datos41B %>% filter(!Nota<0 & !Nota>20)
+
+datos41B %>% filter(Edad>=18 & Edad<=59)
+
+datos41B %>% 
+  filter(Nota>=0 & Nota<=20) %>% 
+  filter(Edad>=18 & Edad<=59) %>% 
+  filter(NumCred>0)
+
+filter(filter(filter(datos41B,Nota>0 & Nota<20),Edad>18 & Edad<90),NumCred>0)
+
+datos41B = read.csv2("Datos 04.01 - B.csv")
+
+datos41B %>%
+  select(-X) %>% 
+  filter(Nota>0 & Nota<20) %>% 
+  filter(Edad>18 & Edad<90) %>% 
+  filter(NumCred>0) -> datosOK
+
+datos41B
+datosOK
+
+# Aplicación 3: Tarjetas de crédito
+
+datos41C = read.delim("Datos 04.01 - C.txt", encoding = "UTF-8")
+
+library(lubridate) # lubridate sirve para el manejo de fechas
+
+datos41C %>% 
+  mutate(NOMBRE_COMPLETO = paste(NOMBRES,APELLIDOS)) %>% 
+  mutate(MONTO_USD = MONTO_SOLES/3.54) %>% 
+  mutate(TIEMPO = as.Date(FECHA_PAGO1,format=c("%d/%m/%Y"))-as.Date(FECHA_COMPRA,format=c("%d/%m/%Y"))) %>% 
+  mutate(MES = month(as.Date(FECHA_COMPRA,format=c("%d/%m/%Y")))) %>% 
+  filter(MES == 1) %>% 
+  filter(TIEMPO > 30) %>% 
+  select(NOMBRE_COMPLETO, MONTO_USD, TIEMPO) -> MOROSOS
+
+# El símbolo = es equivalente a <-, no es equivalente a ->
+
+MOROSOS
+
+# Si la fecha fuese por ejemplo 05-08-2020, tendríamos que colocar en formato "%d-%m-%Y"
+# Si la fecha fuese por ejemplo 2020.08.05, tendríamos que colocar en formato "%Y.%m.%d"
+
+# Manipulando fechas
+
+Sys.Date()
+Sys.time()
+
+library(lubridate)
+today()
+today(tz = "America/Lima")
+today(tz = "US/Hawaii")
+today(tz = "Etc/GMT-5")
+today(tz = "Australia/Eucla")
+OlsonNames()
+
+ymd("2020-09-04")
+ymd("2020-Sep-04")
+dmy("04-Sep-2020")
+
+make_datetime(2020,09,04)
+make_datetime(day=04,month=09,year=2020)
+make_datetime(2020,09,04,11)
+make_datetime(2020,09,04,11,25)
+make_datetime(2020,09,04,11,25,40,tz="America/Lima") -> a
+
+year(a)
+month(a)
+mday(a) # día del mes
+yday(a) # día del año
+366-yday(today())
+wday(a) # día de la semana
+
+# Aplicación 4: Empleados
+
+empleados = read_xlsx("Datos 04.01 - D.xlsx", sheet = "Empleados")
+areas     = read_xlsx("Datos 04.01 - D.xlsx", sheet = "Areas")
+
+inner_join(empleados,areas)
+empleados %>% inner_join(areas) %>% View()
+
+# empleados %>%
+#   mutate(UBICACION = ifelse(AREA=="Marketing","San Isidro",
+#                             ifelse(AREA=="Finanzas","Lima","Otro"))) %>%
+#   mutate(JEFE = "ABC") %>%
+#   View()
+
+left_join(empleados,areas) %>% View()
+empleados %>% left_join(areas) %>% View()
+
+empleados %>% right_join(areas) %>% View()
+
+empleados %>% full_join(areas) %>% View()
+library(magrittr)
+library(dplyr)
+library(modeest)
+
+# ---------------------------- #
+# MEDIDAS DE TENDENCIA CENTRAL #
+# ---------------------------- #
+
+# Ejercicio introductorio
+# Se registran las siguientes variables para un grupo de 12 alumnos de 1ero de secundaria
+# X = Edad
+# Y = Tipo de sangre
+# Z = Número de hermanos
+
+x = c(12,11,12,13,12,12,13,12,12,11,12,12)
+y = c("O+","O+","A","O+","AB","O+","A","O+","O+","B","A","O-")
+z = c(0,0,1,1,2,2,1,2,1,0,3,2)
+
+mean(x);mean(y);mean(z)
+median(x);median(y);median(z)
+mfv(x);mfv(y);mfv(z)
+
+# Aplicación SUNEDU
+
+SUNEDU = read.csv("Licenciamiento Institucional_6.csv", sep = "|")
+SUNEDU %>% head()
+SUNEDU %>% tail()
+SUNEDU %>% nrow()
+SUNEDU %>% ncol()
+SUNEDU %>% colnames()
+SUNEDU %>% View()
+
+SUNEDU %>% 
+  summarise(mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  summarise(media = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(TIPO_GESTION == "PRIVADO") %>% 
+  summarise(media.privadas = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(TIPO_GESTION == "PÚBLICO") %>% 
+  summarise(media.publicas = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(ESTADO_LICENCIAMIENTO == "LICENCIA OTORGADA") %>% 
+  filter(DEPARTAMENTO_LOCAL == "LIMA") %>% 
+  summarise(media.lima = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(ESTADO_LICENCIAMIENTO == "LICENCIA OTORGADA") %>% 
+  filter(DEPARTAMENTO_LOCAL != "LIMA") %>% 
+  summarise(mediana.NOlima = median(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  summarise(moda = mfv(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(ESTADO_LICENCIAMIENTO == "LICENCIA DENEGADA") %>% 
+  summarise(moda = mfv(DEPARTAMENTO_LOCAL, ))
+
+SUNEDU %>% 
+  filter(DEPARTAMENTO_LOCAL == "AREQUIPA") %>% 
+  summarise(moda = mfv(TIPO_GESTION))
+
+library(magrittr)
+library(dplyr)
+library(modeest)
+
+# ------------------- #
+# MEDIDAS DE POSICIÓN #
+# ------------------- #
+
+# Ejercicio introductorio
+
+x = c(12,11,12,13,12,12,13,12,12,11,12,12)
+quantile(x, 0.25)
+sort(x)
+
+# Aplicación SUNEDU
+
+SUNEDU = read.csv("Licenciamiento Institucional_6.csv", sep = "|")
+
+SUNEDU %>% 
+  summarise(P90 = quantile(PERIODO_LICENCIAMIENTO,0.90))
+
+SUNEDU %>% 
+  summarise(P35 = quantile(LATITUD_UBICACION,0.35))
+
+SUNEDU %>% 
+  filter(DEPARTAMENTO_LOCAL == "LA LIBERTAD") %>% 
+  summarise(P25 = quantile(PERIODO_LICENCIAMIENTO,0.25),
+            P75 = quantile(PERIODO_LICENCIAMIENTO,0.75))
+           
+ library(magrittr)
+library(dplyr)
+library(modeest)
+library(sjstats)
+
+# ----------------------- #
+# MEDIDAS DE VARIABILIDAD #
+# ----------------------- #
+
+# Ejemplo introductorio
+
+x = c(12,11,12,13,12,12,13,12,12,11,12,12)
+z = c(0,0,1,1,2,2,1,2,1,0,3,2)
+
+Rango = function(f){max(f)-min(f)}
+Rango(x);Rango(z)
+
+IQR(x);IQR(z)
+var(x);var(z)
+sd(x);sd(z)
+cv(x);cv(z)
+
+# Aplicación BONOS
+
+BONO = read.csv2("bono_Independiente_trabajaperu.csv")
+BONO %>% View()
+
+BONO = BONO %>% 
+  select(DE_DEPARTAMENTO,PERSONAS_HOGAR,MONTO,BONO_COBRADO,ENTIDAD_COBRO,MEDIO_COBRO)
+
+BONO %>% 
+  summarise(R = Rango(PERSONAS_HOGAR)) -> RANGO 
+
+BONO %>% 
+  summarise(RIC = IQR(PERSONAS_HOGAR)) -> RANGO.INTERCUARTIL
+
+BONO %>% 
+  filter(DE_DEPARTAMENTO=="CUSCO") %>% 
+  summarise(DESV = sd(PERSONAS_HOGAR)) -> DESVE.CUSCO
+
+BONO %>% 
+  filter(DE_DEPARTAMENTO=="LAMBAYEQUE") %>% 
+  summarise(DESV = sd(PERSONAS_HOGAR)) -> DESVE.LAMB
+
+BONO %>% 
+  filter(DE_DEPARTAMENTO %in% c("CUSCO","LAMBAYEQUE")) %>% 
+  group_by(DE_DEPARTAMENTO) %>% 
+  summarise(DESV = sd(PERSONAS_HOGAR)) -> DESVE
+
+BONO %>% 
+  filter(DE_DEPARTAMENTO=="CUSCO") %>% 
+  summarise(CV = cv(PERSONAS_HOGAR)*100) 
+
+BONO %>% 
+  filter(DE_DEPARTAMENTO=="LAMBAYEQUE") %>% 
+  summarise(CV = cv(PERSONAS_HOGAR)*100)
+  library(magrittr) # %>% 
+library(dplyr)    # select, filter, mutate, summarise
+library(modeest)  # mfv (most frequent value)
+
+# Ejercicio introductorio
+# Se registran las siguientes variables para un grupo de 12 alumnos de 1ero de secundaria
+# X = Edad (años cumplidos) → cuantitativa discreta
+# Y = Tipo de sangre → cualitativa nominal
+# Z = Número de hermanos → cuantitativa discreta
+
+x = c(12,11,12,13,12,12,13,12,12,11,12,12)
+y = c("O+","O+","A","O+","AB","O+","A","O+","O+","B","A","O-")
+z = c(0,0,1,1,2,2,1,2,1,0,3,2)
+D = data.frame(x,y,z)
+
+mean(x);mean(y);mean(z) # promedio
+median(x);median(y);median(z) # mediana
+sort(x)
+# POR LO MENOS la mitad (el 50%) de las edades es menor o igual a 12
+sort(z)
+# Al menos la mitad de los alumnos tiene uno o menos hermanos
+mfv(x);mfv(y);mfv(z)
+
+SUNEDU = read.csv("Licenciamiento Institucional_6.csv", sep = "|")
+SUNEDU %>% head()
+SUNEDU %>% tail()
+SUNEDU %>% nrow()
+SUNEDU %>% ncol()
+SUNEDU %>% colnames()
+SUNEDU %>% View()
+
+SUNEDU %>% 
+  summarise(mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  summarise(Media = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(TIPO_GESTION == "PRIVADO") %>% 
+  summarise(media.privadas = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(TIPO_GESTION == "PÚBLICO") %>% 
+  summarise(media.publicas = mean(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(ESTADO_LICENCIAMIENTO == "LICENCIA OTORGADA") %>% 
+  filter(DEPARTAMENTO_LOCAL == "LIMA") %>% 
+  summarise(media.lima = mean(PERIODO_LICENCIAMIENTO))
+
+# Halle e interprete la mediana del periodo de licenciamiento de las
+# universidades privadas licenciadas fuera de Lima.
+SUNEDU %>% 
+  filter(ESTADO_LICENCIAMIENTO == "LICENCIA OTORGADA") %>% 
+  filter(DEPARTAMENTO_LOCAL != "LIMA") %>% 
+  filter(TIPO_GESTION == "PRIVADO") %>% 
+  summarise(mediana.NOlima = median(PERIODO_LICENCIAMIENTO))
+  
+SUNEDU %>% 
+  summarise(moda = mfv(PERIODO_LICENCIAMIENTO))
+
+SUNEDU %>% 
+  filter(ESTADO_LICENCIAMIENTO == "LICENCIA DENEGADA") %>% 
+  summarise(moda = mfv(DEPARTAMENTO_LOCAL))
+
+SUNEDU %>% 
+  filter(DEPARTAMENTO_LOCAL == "AREQUIPA") %>% 
+  summarise(moda = mfv(TIPO_GESTION))
+
+x = c(12,11,12,13,12,12,13,12,12,11,12,12)
+quantile(x, 0.25)
+quantile(x, 0.44)
+sort(x)
+# Al menos el 25% de las edades es menor o igual a 12
+# Al menos el 44% de las edades es menor o igual a 12
+quantile(x, 0.05)
+# Al menos el 5% de las edades es menor o igual a 11
+
+# Menos del 95% de las edades es mayor a 11
+
+SUNEDU %>% 
+  summarise(P90 = quantile(PERIODO_LICENCIAMIENTO,0.90))
+
+SUNEDU %>% 
+  summarise(P35 = quantile(LATITUD_UBICACION,0.35))
+
+
+SUNEDU %>% 
+  filter(DEPARTAMENTO_LOCAL == "LA LIBERTAD") %>% 
+  summarise(P25 = quantile(PERIODO_LICENCIAMIENTO,0.25),
+            P75 = quantile(PERIODO_LICENCIAMIENTO,0.75),
+            MEDIA = mean(PERIODO_LICENCIAMIENTO)) -> resumen
+
+resumen
